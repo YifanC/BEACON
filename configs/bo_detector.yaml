@@ -1,0 +1,180 @@
+# Bayesian-optimization config for larnd-sim-jax detector calibration.
+# Bounds for tunable params follow optimize/ranges.py (min/max columns).
+
+input_file: /sdf/data/neutrino/cyifan/dunend_train_prod/prod_mod0_mpvmpr/production_884072/job_23771825_0000/output_23771825_0000-edepsim_lbl_trklen2cm_containment2cm_costheta0.966_range_0.05cm.h5
+target_file: /sdf/group/neutrino/cyifan/BEACON/target/target_nominal.npz
+# If true, the actual file path used by both generate_target.py and bo_detector.py
+# is automatically suffixed with the sim settings that change what the simulator
+# outputs (max_nbatch, max_batch_len, n_events, sim_seed_strategy, seed). This way
+# each (max_nbatch, ...) setting gets its own cached target file instead of
+# overwriting one shared target_nominal.npz. Example resolved name:
+#   /sdf/.../target_nominal__nbatch100_maxlen200_nev-1_same-0.npz
+# Default false preserves the single-fixed-path behavior.
+target_file_auto_suffix: true
+output_dir: /sdf/group/neutrino/cyifan/BEACON/output
+
+# Path to the larnd-sim-jax source tree (used for sys.path insertion outside the apptainer
+# build, where `pip install .` already exposes the package).
+larndsim_repo: /sdf/group/neutrino/cyifan/BEACON/larnd-sim-jax
+
+# Forward-simulation settings (mirror simulate_fwd.sh).
+sim:
+  detector_props: src/larndsim/detector_properties/module0.yaml
+  pixel_layouts: src/larndsim/pixel_layouts/multi_tile_layout-2.4.16_v4.yaml
+  lut_file: src/larndsim/detector_properties/response_44_v2a_full_tick.npz
+  mode: lut
+  electron_sampling_resolution: 0.1
+  number_pix_neighbors: 4
+  signal_length: 300
+  noise: true                       # --noise
+  diffusion_in_current_sim: true    # --diffusion_in_current_sim
+  mc_diff: false
+  use_dedx_density: false
+  dedx_density_mode: histogram
+  max_batch_len: 200.0
+  max_nbatch: null #100
+  n_events: -1
+  seed: 0                           # used only when sim_seed_strategy == "constant"
+  # Per-batch seed strategy used by EVERY BO θ-evaluation. Mirrors the larnd-sim-jax
+  # optimizer convention. Keep it at "same" or "constant" so noise is independent of θ
+  # (GP assumes deterministic objective). "different_epoch"/"random" break determinism.
+  #   same             -> rngkey = ibatch + 1
+  #   different        -> rngkey = -ibatch - 1
+  #   different_epoch  -> rngkey = -ibatch - 1 - epoch*10000   (epoch is always 0 here)
+  #   random           -> rngkey = randint                     (NOT for production BO)
+  #   constant         -> rngkey = sim.seed
+  sim_seed_strategy: same
+
+# Optional overrides used ONLY by generate_target.py. Omit (or set to null) to share
+# the BO sim block. Set to a different value to inject a target/sim noise mismatch.
+target_seed: null
+target_seed_strategy: same          # batch i of the target uses rngkey = i + 1
+
+# Loss settings (GenericLossStrategy wrapping mse_adc / MMD).
+loss:
+  sigma: 0.1 #1.0
+  lambda_Q: 0.1 #1.0  # lowered: with sigma=0.1 the MMD scale shrinks; lambda_Q=1
+                       # let charge_loss dominate and starved diffusion of signal.
+
+# Tunable detector parameters with hard bounds from otimize/ranges.py.
+#
+# Per-parameter knob: `log: true` switches that axis to log10 normalization.
+# - Sobol samples become log-uniform between min and max (more samples per
+#   decade rather than per unit interval — appropriate when the loss curvature
+#   is roughly log-scaled, e.g. parameters that vary over several decades or
+#   that enter the simulator through `exp(...)` / `1/τ` style terms).
+# - The GP applies log10 before its Normalize transform, so the ARD lengthscale
+#   for that axis is learned in log-space — much better when the loss curvature
+#   differs at the two ends of a wide range.
+# - The simulator still receives the parameter in physical units; only the
+#   GP's internal view changes.
+# Requires `min > 0` on the log-scaled axis. Defaults to `log: false`.
+params:
+  - name: Ab
+    min: 0.78
+    max: 0.88
+    nominal: 0.8
+    log: false
+  - name: kb
+    min: 0.04
+    max: 0.07
+    nominal: 0.0486
+    log: false
+  - name: eField
+    min: 0.45
+    max: 0.55
+    nominal: 0.5
+    log: false
+  - name: lifetime
+    min: 500.0
+    max: 5000.0
+    nominal: 2200.0
+    log: true       # one-decade range; loss enters through exp(-t/τ)
+  - name: long_diff
+    min: 2.0e-6
+    max: 1.0e-5
+    # max: 9.0e-5
+    nominal: 4.0e-6
+    log: true
+  - name: tran_diff
+    # min: 4.0e-6
+    # max: 1.4e-5
+    min: 5.0e-6
+    max: 1.2e-5
+    nominal: 8.8e-6
+    log: true
+
+# BO loop.
+bo:
+  n_init: 64        # Sobol seeds
+  n_iter: 200        # acquisition iterations
+  q: 1
+  num_restarts: 20 #10
+  raw_samples: 1024 #256
+  polish: true      # L-BFGS-B polish from best BO point at end
+  torch_seed: 0
+  numpy_seed: 0
+  # Acquisition function. One of:
+  #   qLogEI   -> qLogExpectedImprovement       (default; assumes noiseless obs)
+  #   qLogNEI  -> qLogNoisyExpectedImprovement  (robust to per-eval stat noise
+  #                from finite-sample MMD; uses train_X as a Monte-Carlo baseline
+  #                instead of the single best observation)
+  acquisition: qLogNEI
+
+  # BO health diagnostics. When true:
+  #   - captures BoTorch/scipy/gpytorch warnings into the slurm log (per-iter);
+  #   - tracks acq value, Δx_norm, ARD lengthscales each iter;
+  #   - prints enriched per-iter log line with STUCK_dx / ACQ_PLATEAU flags;
+  #   - writes acq_history/diff_history/lengthscale_history/n_init into trace.npz
+  #     so visualize_bo_run.ipynb section 7 can plot them.
+  # When false: behaves like the original code (3-key trace.npz, plain log line,
+  # no warning capture). Use false to silence the extra log volume on long runs
+  # once you've confirmed BO is healthy.
+  diagnostics: true
+
+  # Early stop: break the BO loop when the acquisition value AND the step size
+  # have plateaued for a stretch — saves budget once the objective is converged.
+  # Requires `diagnostics: true` (auto-enabled if missing). Triggers when both:
+  #   std(acq_history[-window:])   <  early_stop_acq_tol
+  #   mean(diff_history[-window:]) <  early_stop_diff_tol
+  # diff_history is ||Δx||_2 in NORMALIZED space, so the tolerance is per-axis
+  # fractional. Defaults are conservative — loosen if BO converges fast.
+  early_stop: true
+  early_stop_window: 30
+  early_stop_acq_tol: 0.1
+  early_stop_diff_tol: 0.01
+
+  # ── Batch rotation + noisy GP (optional) ───────────────────────────────────
+  # When `batch_rotation: true`:
+  #   - each BO evaluation samples a fresh random subset of `batches_per_eval`
+  #     batches from the dataset (out of sim.max_nbatch available);
+  #   - the GP is built with `train_Yvar` so it models the underlying full-file
+  #     loss while properly accounting for per-eval estimator noise (the
+  #     randomness lives in the batch choice, NOT in the simulator — sim is
+  #     still deterministic given (θ, subset, sim_seed_strategy));
+  #   - `best_idx` is selected via posterior mean (the GP's belief), not the
+  #     luckiest noisy observation;
+  #   - the L-BFGS-B polish at the end always uses ALL batches for consistency.
+  # When `batch_rotation: false` (default) the behavior is identical to before.
+  batch_rotation: true
+  batches_per_eval: 20
+
+  # noisy_gp: whether to provide train_Yvar to SingleTaskGP (fixed-noise mode).
+  # Orthogonal to batch_rotation:
+  #   null (default) → follow batch_rotation (the usual choice)
+  #   true           → use train_Yvar even without rotation (uses yvar_value as a
+  #                     constant; useful for residual numerical noise in the sim)
+  #   false          → never use train_Yvar (even with rotation; BAD combination
+  #                     — GP will overfit rotation noise as signal; warned)
+  noisy_gp: null
+
+  # Yvar source (only used when batch_rotation is true):
+  #   "calibrate" — before BO starts, evaluate nominal θ `yvar_calibration_n`
+  #                 times with fresh random subsets and use the sample variance
+  #                 as a constant Yvar (one-shot, ~yvar_calibration_n forward
+  #                 sims at startup). Most accurate; default.
+  #   "fixed"    — skip calibration; use `yvar_value` directly. Fastest startup
+  #                but you must know roughly the right magnitude.
+  yvar_source: calibrate
+  yvar_calibration_n: 10
+  yvar_value: 1.0e-4
