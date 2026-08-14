@@ -1,0 +1,19 @@
+# 1D scan analysis configuration.
+#
+# The authoritative eField scan PKL was produced by the upstream
+# `optimize/scripts/scan_ABCD.sh` in configuration A2-B1-C2-D2 (batch 200,
+# n_batches 50). It contains iteration-level trajectories for a 1D loss/BO
+# scan across the eField axis with all other detector parameters held at
+# their generating nominals.
+#
+# This workflow is analysis-only: it reads the single PKL under `.local/one_d/`
+# and writes the final `scan.png`, `scan_summary.csv`, and `scan_summary.json`
+# into `results/one_d/`.
+
+pkl_path: ".local/one_d/eField_scan_history.pkl"
+parameter: "eField"
+nominal: 0.5
+lower: 0.49
+upper: 0.51
+n_batches_expected: 50
+n_scan_values_expected: 50

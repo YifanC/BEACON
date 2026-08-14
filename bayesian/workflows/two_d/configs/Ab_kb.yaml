@@ -1,0 +1,11 @@
+pair: "Ab_kb"
+tunable_params: ["Ab", "kb"]
+lower: [0.75, 0.03]
+upper: [0.90, 0.08]
+nominal: [0.80, 0.0486]
+units: ["", "kV g / (MeV cm3)"]
+sobol_n: 16
+bo_iters: 40
+sobol_seed: 20260820
+bo_seed: 20260821
+n_events: 176   # 999.93-cm safe dataset

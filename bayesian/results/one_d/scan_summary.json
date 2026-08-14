@@ -1,0 +1,13 @@
+{
+  "parameter": "eField",
+  "nominal": 0.5,
+  "lower": 0.45,
+  "upper": 0.55,
+  "n_scan_values": 105,
+  "best_x": 0.49996221782502753,
+  "best_loss": 7.413775620079832e-07,
+  "gp_predicted_mean_at_nominal": 3.567709999144526e-05,
+  "gp_predicted_std_at_nominal_corrected": 0.00011525888466036516,
+  "gradient_at_nominal_trimmed10pct": -498466.9312502332,
+  "source_pkl_relative": ".local/one_d/eField_scan_history.pkl"
+}

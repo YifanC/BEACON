@@ -1,0 +1,33 @@
+# Local HPC artifacts and generated caches.
+# `.local/` is intentionally excluded from Git.
+.local/
+
+# Generated artifacts. These may exist anywhere under workflows/ or in stray
+# spots; we ignore them everywhere under this directory tree.
+**/raw/
+**/logs/
+**/checkpoints/
+**/output/
+**/__pycache__/
+**/.ipynb_checkpoints/
+**/.pytest_cache/
+
+*.pyc
+*.pyo
+*.pkl
+*.pt
+*.pth
+*.npz
+*.h5
+*.hdf5
+*.out
+*.log
+*.tmp
+*.bak
+*.swp
+.DS_Store
+
+# Track final presentation figures despite the repository-wide *.png rule
+!results/
+!results/**/
+!results/**/*.png

@@ -1,0 +1,11 @@
+pair: "diffusion"
+tunable_params: ["tran_diff", "long_diff"]
+lower: [3.0e-6, 1.0e-6]
+upper: [1.5e-5, 1.0e-5]
+nominal: [8.8e-6, 4.0e-6]
+units: ["cm2/us", "cm2/us"]
+sobol_n: 16
+bo_iters: 40
+sobol_seed: 20260820
+bo_seed: 20260821
+n_events: 176

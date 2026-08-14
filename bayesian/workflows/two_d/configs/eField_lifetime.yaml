@@ -1,0 +1,11 @@
+pair: "eField_lifetime"
+tunable_params: ["eField", "lifetime"]
+lower: [0.49, 400.0]
+upper: [0.51, 6000.0]
+nominal: [0.5, 2200.0]
+units: ["kV/cm", "us"]
+sobol_n: 16
+bo_iters: 40
+sobol_seed: 20260820
+bo_seed: 20260821
+n_events: 176

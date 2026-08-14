@@ -1,0 +1,144 @@
+{
+  "dataset_track_length_cm": 999.926642,
+  "event_count": 176,
+  "hdf5_row_count": 100010,
+  "target_hits": 9368,
+  "target_sha256": "ed72e051a6111cfee218e0e009a9ebd78ae1167ea7225a58f2ac4b32f6edd34f",
+  "final_training_snapshot_sha256": "3599ee904c69654e8ec9da5404669db32ba13345b4205b1be1d16d9236a1fafd",
+  "n_initial": 72,
+  "n_bo_1": 100,
+  "n_bo_tr": 100,
+  "n_bo_tr2": 60,
+  "n_final_training": 332,
+  "n_heldout_global": 16,
+  "n_heldout_local": 16,
+  "n_profile_evaluations": 77,
+  "best_initial": 44702.83203125,
+  "best_bo_1": 21484.77734375,
+  "best_bo_tr": 21099.203125,
+  "old_bo_2_best_for_comparison": 21116.693359375,
+  "best_overall_training": 21026.755859375,
+  "all_nominal_heldout": 21028.986328125,
+  "bo_1_beats_initial": true,
+  "bo_tr_beats_bo_1": true,
+  "bo_tr_beats_old_bo_2": true,
+  "final_best_phase": "BO_TR2",
+  "final_best_coordinate": {
+    "Ab": 0.8006934929933665,
+    "kb": 0.048716177401864125,
+    "eField": 0.4999923871197255,
+    "lifetime": 2241.726206027738,
+    "tran_diff": 8.827187634158596e-06,
+    "long_diff": 4.002600755077654e-06
+  },
+  "final_best_eval_index": 331,
+  "gp_at_final_best": {
+    "post_mean_score": -9.953769283429532,
+    "post_sd_score": 0.0005337633327919961,
+    "exp_neg_mean": 21031.346272920684,
+    "residual_llhd": 4.590413545683987
+  },
+  "heldout_score_rmse": 0.14701047988476224,
+  "heldout_score_mae": 0.10790059092060161,
+  "heldout_spearman": 0.9871700879765395,
+  "heldout_baseline_rmse": 0.9040192739938233,
+  "heldout_68_coverage": 0.84375,
+  "heldout_95_coverage": 0.96875,
+  "heldout_subset": {
+    "global": {
+      "n": 16,
+      "rmse_score": 0.10862618127205471,
+      "mae_score": 0.08643646646267578,
+      "spearman": 0.9794117647058824,
+      "coverage_68": 1.0,
+      "coverage_95": 1.0
+    },
+    "local": {
+      "n": 16,
+      "rmse_score": 0.17726961142324105,
+      "mae_score": 0.12936471537852745,
+      "spearman": 0.9470588235294116,
+      "coverage_68": 0.6875,
+      "coverage_95": 0.9375
+    }
+  },
+  "cv_score_rmse": 0.14542361724497874,
+  "cv_score_mae": 0.04642668715936123,
+  "cv_spearman": 0.9947040550542172,
+  "cv_baseline_rmse": 1.048274992680315,
+  "cv_68_coverage": 0.8373493975903614,
+  "cv_95_coverage": 0.9487951807228916,
+  "final_ard_lengthscales": {
+    "Ab": 1.4333879401864489,
+    "kb": 0.4906393811623373,
+    "eField": 0.10785513659553389,
+    "lifetime": 1.229095652340202,
+    "tran_diff": 2.165071534037303,
+    "long_diff": 2.3919622728031285
+  },
+  "final_outputscale": 0.286953895255903,
+  "requested_yvar_range": [
+    1.10090092536916e-12,
+    2.2618065409563225e-09
+  ],
+  "effective_yvar_range": [
+    1e-06,
+    1e-06
+  ],
+  "gpytorch_default_min_noise": null,
+  "torch_version": "2.6.0+cu124",
+  "botorch_version": "0.16.1",
+  "gpytorch_version": "1.15.2",
+  "bo_1_boundary_fraction": 0.74,
+  "bo_tr_boundary_fraction": 0.01,
+  "bo_tr_expansions": 0,
+  "bo_tr_shrinks": 5,
+  "bo_tr_stagnation_resets": 1,
+  "bo_tr2_initial_length": 0.2,
+  "bo_tr2_final_length": 0.05,
+  "bo_tr2_expansions": 0,
+  "bo_tr2_shrinks": 8,
+  "bo_tr2_stagnation_resets": 1,
+  "final_10_improvement": 0.0,
+  "final_20_improvement": 5.39453125,
+  "nominal_repeat_stats": {
+    "n": 2,
+    "values": [
+      21028.986328125,
+      21028.986328125
+    ],
+    "min": 21028.986328125,
+    "max": 21028.986328125,
+    "std": 0.0,
+    "exact_equal": true
+  },
+  "best_repeat_stats": {
+    "n": 2,
+    "values": [
+      21026.755859375,
+      21026.755859375
+    ],
+    "min": 21026.755859375,
+    "max": 21026.755859375,
+    "std": 0.0,
+    "exact_equal": true
+  },
+  "direct_scan_found_better_point": false,
+  "all_nominal_beats_final_training_best": false,
+  "local_convergence_threshold_llhd": 2.1026755859375,
+  "local_convergence_failing_axes": [],
+  "checks": {
+    "DATA_INTEGRITY": "PASS",
+    "BO_1_IMPROVES_INITIAL": "PASS",
+    "BO_TR_IMPROVES_BO1": "PASS",
+    "BO_TR_IMPROVES_OLD_BO2": "PASS",
+    "LOCAL_CONVERGENCE": "PASS",
+    "GP_BEATS_CONSTANT_BASELINE": "PASS",
+    "GP_HELDOUT_RANKING": "PASS",
+    "GP_INTERVAL_COVERAGE": "PASS",
+    "DIRECT_PROFILES_CONFIRM_BEST": "PASS",
+    "FINAL_BEST_IS_INTERIOR": "PASS",
+    "FIXED_SEED_REPEATABILITY": "PASS",
+    "NOMINAL_CLOSURE": "PASS"
+  }
+}
