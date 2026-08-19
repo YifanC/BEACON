@@ -32,6 +32,31 @@ PHASES = ("INITIAL", "BO", "BO_TR", "BO_TR2")
 PHASE_LABELS = {"INITIAL": "INITIAL / Sobol", "BO": "BO / global",
                 "BO_TR": "BO_TR", "BO_TR2": "BO_TR2"}
 COLORS = {"INITIAL": "#8C8C8C", "BO": "#3B82C4", "BO_TR": "#E69F00", "BO_TR2": "#8E5AA9"}
+PHASE_ENDS = (72, 172, 272, 332)
+
+
+def format_llhd(value: float) -> str:
+    return f"{value:,.1f}" if value >= 10000 else f"{value:.1f}"
+
+
+def annotate_running_best(ax: plt.Axes, loss: np.ndarray, nominal: float) -> None:
+    """Label the four cumulative phase-end minima and nominal reference."""
+    running = np.minimum.accumulate(loss)
+    offsets = ((6, 8), (6, 10), (-10, 30), (-72, 8))
+    for end, offset in zip(PHASE_ENDS, offsets):
+        value = float(running[end - 1])
+        ax.annotate(
+            f"{end}: {format_llhd(value)}", xy=(end, value), xytext=offset,
+            textcoords="offset points", fontsize=7.8, color="#222222",
+            ha="left", va="center",
+            bbox={"boxstyle": "round,pad=0.15", "facecolor": "white",
+                  "edgecolor": "none", "alpha": 0.82}, zorder=7)
+    ax.annotate(
+        f"Nominal LLHD = {format_llhd(nominal)}",
+        xy=(8, nominal), xytext=(0, 7), textcoords="offset points",
+        fontsize=8.0, color="#007A58", ha="left", va="bottom",
+        bbox={"boxstyle": "round,pad=0.15", "facecolor": "white",
+              "edgecolor": "none", "alpha": 0.82}, zorder=7)
 
 
 def read_rows(path: Path) -> list[dict[str, str]]:
@@ -103,6 +128,7 @@ def convergence_and_efficiency(out: Path, loss: np.ndarray, phases: np.ndarray,
     best_ax.scatter(best_idx + 1, loss[best_idx], marker="*", s=170,
                     color="#D55E00", edgecolor="black", linewidth=0.7,
                     label="Final best", zorder=6)
+    annotate_running_best(best_ax, loss, nominal)
     observed.set_ylabel("Observed native LLHD")
     best_ax.set_ylabel("Running-best native LLHD")
     best_ax.set_xlabel("Simulator evaluation")
@@ -136,6 +162,7 @@ def presentation_convergence(out: Path, loss: np.ndarray, phases: np.ndarray,
     ax.scatter(best_idx + 1, loss[best_idx], marker="*", s=170,
                color="#D55E00", edgecolor="black", linewidth=0.7,
                label="Final best", zorder=5)
+    annotate_running_best(ax, loss, nominal)
     ax.set_yscale("log")
     ax.set_xlabel("Simulator evaluation")
     ax.set_ylabel("Running-best native LLHD")
@@ -162,6 +189,21 @@ def parallel_coordinates(out: Path, x: np.ndarray, loss: np.ndarray,
         ax.plot(axis, row, color="#3B82C4", alpha=0.32, linewidth=1.0)
     ax.plot(axis, u[best_idx], color="#D55E00", marker="o", linewidth=3.0, markersize=6)
     ax.plot(axis, nominal_u, color="#009E73", marker="s", linestyle="--", linewidth=2.2, markersize=5)
+    recovered = x[best_idx]
+    rows = [
+        ("Ab", f"{recovered[0]:.5f}", f"{NOM[0]:.5g}"),
+        ("kb", f"{recovered[1]:.5f}", f"{NOM[1]:.5g}"),
+        ("eField", f"{recovered[2]:.6f}", f"{NOM[2]:.5g}"),
+        ("lifetime", f"{recovered[3]:.1f}", f"{NOM[3]:.0f}"),
+        (r"$D_T$", f"{recovered[4]:.3e}", f"{NOM[4]:.3e}"),
+        (r"$D_L$", f"{recovered[5]:.3e}", f"{NOM[5]:.3e}"),
+    ]
+    value_text = "Parameter    Recovered       Nominal\n" + "\n".join(
+        f"{name:<10} {value:>11}  {nominal:>11}" for name, value, nominal in rows)
+    ax.text(0.985, 0.975, value_text, transform=ax.transAxes, ha="right", va="top",
+            fontsize=7.7, family="monospace",
+            bbox={"boxstyle": "round,pad=0.35", "facecolor": "white",
+                  "edgecolor": "0.75", "alpha": 0.92}, zorder=8)
     ax.set_xticks(axis, LABELS, rotation=18, ha="right")
     ax.set_ylim(-0.03, 1.03)
     ax.set_ylabel("Normalized coordinate within allowed range")
@@ -287,6 +329,13 @@ def parameter_recovery(out: Path, x: np.ndarray, loss: np.ndarray,
     ax.set_title(f"{title} — Parameter recovery")
     ax.grid(axis="y", alpha=0.23)
     ax.legend(loc="best", frameon=True)
+    for xpos, value in zip(axis, deviation):
+        label = "0.000%" if abs(value) < 0.0005 else f"{value:+.3f}%"
+        offset = 4 if value >= 0 else -5
+        ax.annotate(label, xy=(xpos, value), xytext=(0, offset),
+                    textcoords="offset points", ha="center",
+                    va="bottom" if value >= 0 else "top", fontsize=8.2,
+                    color="#173B5F")
     pad = max(4.0, float(np.max(np.abs(deviation))) * 0.18)
     ax.set_ylim(float(min(deviation.min() - pad, -pad)), float(max(deviation.max() + pad, pad)))
     fig.subplots_adjust(bottom=0.24, left=0.11, right=0.98, top=0.90)
@@ -320,18 +369,12 @@ class AnalysisPlotter:
 
     def render(self) -> dict[str, object]:
         self.plots.mkdir(exist_ok=True)
-        for old_plot in self.plots.glob("*.png"):
-            old_plot.unlink()
         x, loss, phases = self.loader.load()
         convergence_and_efficiency(
             self.plots / "01_convergence_and_efficiency.png", loss, phases,
             self.nominal, self.title)
         parallel_coordinates(
             self.plots / "02_parallel_coordinates.png", x, loss, self.title)
-        pairwise_matrix(
-            self.plots / "03_pairwise_observation_matrix.png", x, loss, self.title)
-        cv = cross_validate(x, loss)
-        cv_plot(self.plots / "04_gp_cross_validation.png", cv, self.title)
         presentation_convergence(
             self.plots / "05_convergence_presentation.png", loss, phases,
             self.nominal, self.title)
