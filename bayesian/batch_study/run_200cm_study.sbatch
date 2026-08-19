@@ -17,10 +17,10 @@ UPSTREAM=/sdf/home/i/iatif/larnd-sim-jax
 CONTAINER=/sdf/group/neutrino/pgranger/larnd-sim-jax.sif
 
 if [[ "$SLURM_ARRAY_TASK_ID" == 0 ]]; then
-  EXPERIMENT=200cm_seed0
+  EXPERIMENT=200cm/repeat_0
   SIMULATOR_SEED=0
 else
-  EXPERIMENT=200cm_seed1
+  EXPERIMENT=200cm/repeat_1
   SIMULATOR_SEED=1
 fi
 

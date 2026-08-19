@@ -1,0 +1,9 @@
+{
+  "data_size_label": "200cm",
+  "repeat": 0,
+  "repeat_type": "repeated_execution_same_optimizer_seed",
+  "optimizer_seed": 20260812,
+  "authoritative_history": "/sdf/home/i/iatif/REAL_BEACON/bayesian/batch_study/200cm/repeat_0/history/raw",
+  "target": "/sdf/home/i/iatif/REAL_BEACON/bayesian/batch_study/shared/target_200cm.npz",
+  "target_sha256": "fe61cf3fdddf3c227a2ae455397584ac420fa0a03cae1ddebeae9d2e0c9ebf3b"
+}

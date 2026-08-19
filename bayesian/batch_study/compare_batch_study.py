@@ -2,7 +2,6 @@
 from __future__ import annotations
 
 import csv
-import hashlib
 import json
 from dataclasses import dataclass
 from pathlib import Path
@@ -27,51 +26,13 @@ DISPLAY_NAMES = (r"$A_b$", r"$k_b$", "eField", "lifetime", r"$D_T$", r"$D_L$")
 @dataclass(frozen=True)
 class RunSpec:
     data_size_label: str
-    requested_length_cm: float
-    actual_length_cm: float
     repeat: int
-    optimizer_seed: int
-    target: Path
-    n_events: int
-    n_tracks: int
-    experiment: Path
+    raw: Path
     nominal_llhd: float
-    raw_direct: bool = False
-
-    @property
-    def raw(self) -> Path:
-        return self.experiment / "raw" if self.raw_direct else self.experiment / "history/raw"
 
     @property
     def complete(self) -> bool:
         return all(path.exists() for path in history_paths(self))
-
-
-TARGET_200 = STUDY / "shared/target_200cm.npz"
-TARGET_1000 = BAYESIAN / ".local/two_d/target.npz"
-TARGET_2000 = STUDY / "2000cm/target_2000cm.npz"
-NOMINAL_200 = float(np.mean([4077.037353515625, 4077.039306640625]))
-NOMINAL_1000 = 21028.986328125
-NOMINAL_2000 = 43462.88671875
-
-RUNS = [
-    RunSpec("200 cm", 200, 195.33575677871704, 0, 20260812, TARGET_200, 33, 19535,
-            STUDY / "200cm_seed0", NOMINAL_200),
-    RunSpec("200 cm", 200, 195.33575677871704, 1, 20260812, TARGET_200, 33, 19535,
-            STUDY / "200cm_seed1", NOMINAL_200),
-    RunSpec("1000 cm", 1000, 999.926641702652, 0, 20260812, TARGET_1000, 176, 100010,
-            BAYESIAN / ".local/six_d/current", NOMINAL_1000, raw_direct=True),
-    RunSpec("1000 cm", 1000, 999.926636338234, 1, 20260813, TARGET_1000, 176, 100010,
-            STUDY / "1000cm/repeat_1", NOMINAL_1000),
-    RunSpec("1000 cm", 1000, 999.926636338234, 2, 20260814, TARGET_1000, 176, 100010,
-            STUDY / "1000cm/repeat_2", NOMINAL_1000),
-    RunSpec("2000 cm", 2000, 1998.4871374368668, 0, 20260812, TARGET_2000, 374, 199877,
-            STUDY / "2000cm/run", NOMINAL_2000),
-    RunSpec("2000 cm", 2000, 1998.4871374368668, 1, 20260813, TARGET_2000, 374, 199877,
-            STUDY / "2000cm/repeat_1", NOMINAL_2000),
-    RunSpec("2000 cm", 2000, 1998.4871374368668, 2, 20260814, TARGET_2000, 374, 199877,
-            STUDY / "2000cm/repeat_2", NOMINAL_2000),
-]
 
 
 def history_paths(spec: RunSpec) -> tuple[Path, Path, Path]:
@@ -86,67 +47,10 @@ def load_history(spec: RunSpec) -> tuple[np.ndarray, np.ndarray]:
         with path.open(newline="") as stream:
             rows.extend(csv.DictReader(stream))
     if len(rows) != 332:
-        raise RuntimeError(f"{spec.experiment}: expected 332 observations, got {len(rows)}")
+        raise RuntimeError(f"{spec.raw}: expected 332 observations, got {len(rows)}")
     x = np.array([[float(row[name]) for name in NAMES] for row in rows])
     loss = np.array([float(row["native_LLHD"]) for row in rows])
     return x, loss
-
-
-def sha256(path: Path) -> str:
-    digest = hashlib.sha256()
-    with path.open("rb") as stream:
-        for block in iter(lambda: stream.read(1024 * 1024), b""):
-            digest.update(block)
-    return digest.hexdigest()
-
-
-def metrics(spec: RunSpec) -> tuple[float, float, float]:
-    if spec.data_size_label == "1000 cm" and spec.repeat == 0:
-        health = json.loads((BAYESIAN / "results/six_d/health_metrics.json").read_text())
-        return (float(health["cv_score_rmse"]), float(health["cv_spearman"]),
-                float(health["cv_baseline_rmse"]))
-    summary = json.loads((spec.experiment / "results/summary.json").read_text())
-    return (float(summary["gp_cv"]["rmse"]), float(summary["gp_cv"]["spearman"]),
-            float(summary["gp_cv"]["baseline_rmse"]))
-
-
-def summary_row(spec: RunSpec) -> dict[str, object]:
-    x, loss = load_history(spec)
-    index = int(np.argmin(loss))
-    best = x[index]
-    deviation = 100.0 * (best - NOM) / (HI - LO)
-    rmse, spearman, baseline_rmse = metrics(spec)
-    first = int(np.flatnonzero(loss == loss[index])[0])
-    stage = ("INITIAL" if first < 72 else "BO_GLOBAL" if first < 172
-             else "BO_TR" if first < 272 else "BO_TR2")
-    row: dict[str, object] = {
-        "data_size_label": spec.data_size_label,
-        "requested_length_cm": spec.requested_length_cm,
-        "actual_length_cm": spec.actual_length_cm,
-        "repeat": spec.repeat,
-        "repeat_type": ("repeated_execution_same_optimizer_seed"
-                        if spec.data_size_label == "200 cm" else "optimizer_seed_repeat"),
-        "optimizer_seed": spec.optimizer_seed,
-        "target_hash": sha256(spec.target),
-        "n_events": spec.n_events,
-        "n_tracks": spec.n_tracks,
-        "n_evaluations": len(loss),
-        "best_llhd": float(loss[index]),
-        "nominal_llhd": spec.nominal_llhd,
-        "best_minus_nominal": float(loss[index] - spec.nominal_llhd),
-        "relative_best_minus_nominal": float(
-            (loss[index] - spec.nominal_llhd) / spec.nominal_llhd),
-        "gp_cv_rmse": rmse,
-        "gp_cv_spearman": spearman,
-        "gp_cv_baseline_rmse": baseline_rmse,
-        "best_first_found_stage": stage,
-        "best_first_found_evaluation": first + 1,
-    }
-    row.update({name: float(best[i]) for i, name in enumerate(NAMES)})
-    row.update({f"{name}_nominal": float(NOM[i]) for i, name in enumerate(NAMES)})
-    row.update({f"{name}_deviation_pct_range": float(deviation[i])
-                for i, name in enumerate(NAMES)})
-    return row
 
 
 def load_summary(path: Path) -> list[dict[str, str]]:
@@ -155,6 +59,64 @@ def load_summary(path: Path) -> list[dict[str, str]]:
     if len(rows) != 8:
         raise RuntimeError(f"expected eight completed runs in {path}, found {len(rows)}")
     return rows
+
+
+def load_specs(rows: list[dict[str, str]]) -> list[RunSpec]:
+    summary = {(row["data_size_label"].replace(" ", ""), int(row["repeat"])): row
+               for row in rows}
+    specs = []
+    for metadata_path in sorted(STUDY.glob("*cm/repeat_*/run.json")):
+        metadata = json.loads(metadata_path.read_text())
+        key = (metadata["data_size_label"], int(metadata["repeat"]))
+        row = summary[key]
+        specs.append(RunSpec(row["data_size_label"], key[1],
+                             Path(metadata["authoritative_history"]),
+                             float(row["nominal_llhd"])))
+    if len(specs) != 8:
+        raise RuntimeError(f"expected eight run metadata files, found {len(specs)}")
+    return specs
+
+
+def plot_within_scale(specs: list[RunSpec], rows: list[dict[str, str]],
+                      output_dir: Path) -> None:
+    output_dir.mkdir(exist_ok=True)
+    fig, ax = plt.subplots(figsize=(10.5, 6.2))
+    for spec in specs:
+        _, loss = load_history(spec)
+        ax.plot(np.arange(1, 333), np.minimum.accumulate(loss),
+                color="#3B6FB6", linestyle=LINESTYLES[spec.repeat], lw=2.0,
+                label=f"Repeat {spec.repeat}")
+    ax.axhline(specs[0].nominal_llhd, color="#333333", linestyle="--", lw=1.5,
+               label="Nominal reference")
+    for boundary in (72.5, 172.5, 272.5):
+        ax.axvline(boundary, color="#888888", linestyle=":", lw=0.9)
+    ax.set(xlabel="Simulator evaluation", ylabel="Running-best native LLHD",
+           title=f"~{specs[0].data_size_label} — Repeat convergence")
+    ax.grid(alpha=0.22)
+    ax.legend(frameon=True)
+    fig.tight_layout()
+    fig.savefig(output_dir / "comparison_convergence.png", dpi=260)
+    plt.close(fig)
+
+    scale_rows = sorted(
+        (row for row in rows if row["data_size_label"] == specs[0].data_size_label),
+        key=lambda row: int(row["repeat"]))
+    fig, ax = plt.subplots(figsize=(10.5, 6.2))
+    axis = np.arange(len(NAMES))
+    offsets = np.linspace(-0.16, 0.16, len(scale_rows))
+    for offset, row in zip(offsets, scale_rows):
+        values = [float(row[f"{name}_deviation_pct_range"]) for name in NAMES]
+        ax.plot(axis + offset, values, marker="o", lw=1.4,
+                label=f"Repeat {row['repeat']}")
+    ax.axhline(0, color="#333333", linestyle="--", lw=1.5, label="Nominal")
+    ax.set_xticks(axis, DISPLAY_NAMES)
+    ax.set_ylabel("Deviation from nominal (% of allowed range)")
+    ax.set_title(f"~{specs[0].data_size_label} — Final parameter coordinates")
+    ax.grid(axis="y", alpha=0.22)
+    ax.legend(frameon=True)
+    fig.tight_layout()
+    fig.savefig(output_dir / "comparison_final_parameters.png", dpi=260)
+    plt.close(fig)
 
 
 def plot_cross_scale_convergence(
@@ -273,14 +235,19 @@ def plot_cross_scale_parameter_recovery(rows: list[dict[str, str]], output: Path
 
 
 def main() -> None:
-    complete = [spec for spec in RUNS if spec.complete]
     comparison = STUDY / "comparison"
     comparison.mkdir(exist_ok=True)
     rows = load_summary(comparison / "optimizer_repeats.csv")
+    complete = [spec for spec in load_specs(rows) if spec.complete]
+    if len(complete) != 8:
+        raise RuntimeError(f"expected eight complete runs, found {len(complete)}")
     plot_cross_scale_convergence(
         complete, rows, comparison / "01_cross_scale_convergence.png")
     plot_cross_scale_parameter_recovery(
         rows, comparison / "02_cross_scale_parameter_recovery.png")
+    for scale in ("200 cm", "1000 cm", "2000 cm"):
+        scale_specs = [spec for spec in complete if spec.data_size_label == scale]
+        plot_within_scale(scale_specs, rows, STUDY / scale.replace(" ", "") / "comparison")
     print(json.dumps({"completed_runs": len(complete),
                       "figures": ["01_cross_scale_convergence.png",
                                   "02_cross_scale_parameter_recovery.png"]}, indent=2))

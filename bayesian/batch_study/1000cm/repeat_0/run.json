@@ -1,0 +1,10 @@
+{
+  "data_size_label": "1000cm",
+  "repeat": 0,
+  "repeat_type": "optimizer_seed_repeat",
+  "optimizer_seed": 20260812,
+  "authoritative_history": "/sdf/home/i/iatif/REAL_BEACON/bayesian/.local/six_d/current/raw",
+  "authoritative_results": "/sdf/home/i/iatif/REAL_BEACON/bayesian/results/six_d",
+  "target": "/sdf/home/i/iatif/REAL_BEACON/bayesian/.local/two_d/target.npz",
+  "target_sha256": "ed72e051a6111cfee218e0e009a9ebd78ae1167ea7225a58f2ac4b32f6edd34f"
+}

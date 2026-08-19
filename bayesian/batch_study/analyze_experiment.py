@@ -5,13 +5,9 @@ import argparse
 import csv
 import json
 from collections import Counter
-from datetime import datetime
 from pathlib import Path
 import sys
 
-import matplotlib
-matplotlib.use("Agg")
-import matplotlib.pyplot as plt
 import numpy as np
 import torch
 from scipy.stats import spearmanr
@@ -20,7 +16,6 @@ from scipy.stats import spearmanr
 NAMES = ("Ab", "kb", "eField", "lifetime", "tran_diff", "long_diff")
 LO = np.array([0.75, 0.03, 0.49, 400.0, 3.0e-6, 1.0e-6])
 HI = np.array([0.90, 0.08, 0.51, 6000.0, 15.0e-6, 10.0e-6])
-NOM = np.array([0.80, 0.0486, 0.50, 2200.0, 8.8e-6, 4.0e-6])
 
 
 def rows(path: Path) -> list[dict[str, str]]:
@@ -78,9 +73,7 @@ def main() -> None:
     experiment = args.experiment_dir.resolve()
     run_root = experiment / "history"
     result_dir = experiment / "results"
-    plot_dir = experiment / "plots"
     result_dir.mkdir(exist_ok=True)
-    plot_dir.mkdir(exist_ok=True)
     training = load_training(run_root)
     x = np.array([[float(row[name]) for name in NAMES] for row in training])
     loss = np.array([float(row["native_LLHD"]) for row in training])
@@ -94,45 +87,7 @@ def main() -> None:
     best = x[best_index]
     elapsed = sum(float(row["simulator_elapsed_seconds"]) for row in training)
 
-    evaluation = np.arange(1, len(loss) + 1)
-    running = np.minimum.accumulate(loss)
-    fig, ax = plt.subplots(figsize=(10, 6))
-    ax.plot(evaluation, running, lw=2.5, color="#174A7E")
-    for boundary in (72, 172, 272):
-        ax.axvline(boundary + 0.5, color="0.65", ls="--", lw=1.2)
-    ax.set(xlabel="Simulator evaluation", ylabel="Best native LLHD",
-           title="Six-dimensional optimizer convergence")
-    ax.grid(alpha=0.25)
-    fig.tight_layout()
-    fig.savefig(plot_dir / "01_convergence.png", dpi=240)
-    plt.close(fig)
-
-    deviation = 100.0 * (best - NOM) / (HI - LO)
-    fig, ax = plt.subplots(figsize=(9, 6))
-    ypos = np.arange(len(NAMES))
-    ax.axvline(0.0, color="0.2", lw=1.5)
-    ax.barh(ypos, deviation, color="#2878B5")
-    ax.set_yticks(ypos, NAMES)
-    ax.invert_yaxis()
-    ax.set(xlabel="Deviation from nominal (% of allowed range)",
-           title="Best observed coordinate")
-    ax.grid(axis="x", alpha=0.25)
-    fig.tight_layout()
-    fig.savefig(plot_dir / "02_parameter_recovery.png", dpi=240)
-    plt.close(fig)
-
     cv = cross_validation(x, loss, experiment.parents[1] / "workflows/six_d")
-    fig, ax = plt.subplots(figsize=(7, 7))
-    ax.scatter(cv["actual"], cv["predicted"], s=20, alpha=0.7)
-    low = min(cv["actual"].min(), cv["predicted"].min())
-    high = max(cv["actual"].max(), cv["predicted"].max())
-    ax.plot([low, high], [low, high], "--", color="0.3")
-    ax.set(xlabel="Actual score, -ln(LLHD)", ylabel="Cross-validated GP score",
-           title="Five-fold GP cross-validation")
-    ax.grid(alpha=0.25)
-    fig.tight_layout()
-    fig.savefig(plot_dir / "03_gp_cross_validation.png", dpi=240)
-    plt.close(fig)
 
     config = json.loads((run_root / "raw/config/run_config.json").read_text())
     summary = {
