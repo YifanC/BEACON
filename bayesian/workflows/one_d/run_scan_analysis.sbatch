@@ -2,7 +2,7 @@
 #SBATCH --partition=milano
 #SBATCH --account=neutrino:cider-nu
 #SBATCH --job-name=scan1d
-#SBATCH --output=/sdf/home/i/iatif/larnd-sim-jax/optimize/bayesian/.local/one_d/scan-%j.out
+#SBATCH --output=/sdf/home/i/iatif/REAL_BEACON/bayesian/.local/one_d/scan-%j.out
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=2
 #SBATCH --mem=8G

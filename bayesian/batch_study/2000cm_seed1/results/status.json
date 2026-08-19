@@ -1,0 +1,13 @@
+{
+  "experiment": "2000cm_seed1",
+  "requested_physical_track_length_cm": 2000,
+  "available_physical_track_length_cm": 1998.4871374368668,
+  "candidate_simulator_seed": 1,
+  "data_seed": 0,
+  "target_seed": 0,
+  "optimizer_workflow": "72 Sobol + 100 global BO + 100 BO_TR + 60 BO_TR2",
+  "optimizer_evaluations_completed": 0,
+  "status": "blocked",
+  "reason": "Native one-batch nominal target generation exceeded A100 device memory: requested allocation 40434320128 bytes. H200 partition is not authorized for this user/account.",
+  "relevant_function": "workflows/objective.py:LLHDObjective.generate_nominal_target"
+}

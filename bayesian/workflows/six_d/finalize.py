@@ -12,7 +12,7 @@ import csv, hashlib, json, os, sys
 from pathlib import Path
 import numpy as np
 
-BASE = Path("/sdf/home/i/iatif/larnd-sim-jax/optimize/bayesian").resolve()
+BASE = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(BASE / "workflows/six_d"))
 from build_6d import ROOT, RAW, NAMES, LO, HI, NOM, unit, physical, fit_gp
 
@@ -740,7 +740,7 @@ def write_final_report(state, metrics, cv_stats, heldout_stats, dv_status, per_p
                 "# 1. Regenerate/refresh the final plots + report (idempotent, no simulator calls):\n"
                 "apptainer exec --nv -B /sdf,/fs /sdf/group/neutrino/pgranger/larnd-sim-jax.sif \\\n"
                 "  env MPLBACKEND=Agg PYTHONPATH=/sdf/home/i/iatif/larnd-sim-jax:/sdf/home/i/iatif/larnd-sim-jax/src \\\n"
-                "  python3 /sdf/home/i/iatif/larnd-sim-jax/optimize/bayesian/workflows/six_d/finalize.py\n"
+                f"  python3 {BASE / 'workflows/six_d/finalize.py'}\n"
                 "```\n")
     (RESULTS / "FINAL_6D.md").write_text("".join(body))
 

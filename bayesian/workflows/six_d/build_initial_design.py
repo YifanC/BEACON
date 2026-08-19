@@ -20,18 +20,19 @@ from torch.quasirandom import SobolEngine
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from build_6d import (
-    ROOT, RAW, NAMES, LO, HI, NOM, unit, physical, guard,
+    CONFIG, ROOT, RAW, NAMES, LO, HI, NOM, unit, physical, guard,
     make_objective, eval_point,
 )
 
 N_INITIAL = 72
-SOBOL_SEED = 20260812
+SOBOL_SEED = CONFIG.optimizer_seed
 BO_ITERS = 100
 
 HIST = RAW / "traces/bo_6d_history.csv"
 NPZ = RAW / "initial_design/initial_design_6d.npz"
 CSV_INIT = RAW / "initial_design/initial_design_6d.csv"
 CFG = RAW / "config/run_config.json"
+RUN_LABEL = os.environ.get("BAYESIAN_EXPERIMENT", "6D-1000cm")
 
 FIELDS = [
     "run", "evaluation_index", "simulator_iteration", "phase",
@@ -87,7 +88,7 @@ def main():
         L[i - 1] = loss
         stamp = datetime.now(timezone.utc).isoformat()
         _append({
-            "run": "6D-1000cm",
+            "run": RUN_LABEL,
             "evaluation_index": i,
             "simulator_iteration": 0,
             "phase": "initial",
@@ -124,21 +125,24 @@ def main():
     # Config snapshot
     with _no_overwrite(CFG).open("x") as f:
         json.dump({
-            "run_label": "6D-1000cm",
+            "run_label": RUN_LABEL,
             "created_at": stamp0,
             "physical_dataset": {
-                "label": "999.93-cm safe dataset",
+                "label": f"{obj.dataset.tot_data_length:.6f}-cm dataset",
                 "input_hdf5": ("/sdf/data/neutrino/cyifan/dunend_train_prod/prod_mod0_mpvmpr/"
                                "production_884072/job_23771825_0000/"
                                "output_23771825_0000-edepsim_lbl_trklen2cm_containment2cm_"
                                "costheta0.966_range_0.05cm.h5"),
-                "n_events": 176,
-                "hdf5_rows": 100010,
-                "physical_track_length_cm": 999.926641702652,
-                "target_hits": 9368,
+                "n_events": int(os.environ.get("BAYESIAN_N_EVENTS", "176")),
+                "requested_track_length_cm": float(
+                    os.environ.get("BAYESIAN_PHYSICAL_LENGTH_CM", "1000")
+                ),
+                "physical_track_length_cm": float(obj.dataset.tot_data_length),
+                "target_hits": int(sum(t["adcs"].size for t in tgt)),
                 "target_seed": 0,
-                "target_npz": str((ROOT.parent /
-                                    ".local/two_d/target.npz").resolve()),
+                "candidate_simulator_seed": int(os.environ.get("BAYESIAN_SIMULATOR_SEED", "0")),
+                "data_seed": int(os.environ.get("BAYESIAN_DATA_SEED", "0")),
+                "target_npz": os.environ.get("BAYESIAN_TARGET_NPZ", ""),
             },
             "parameters": {n: {"lower": float(LO[i]), "upper": float(HI[i]),
                                 "nominal": float(NOM[i]), "unit": "" if i not in (1,2,3,4,5)
@@ -160,6 +164,13 @@ def main():
                            "num_restarts": 24,
                            "raw_samples": 2048},
             "bo_iterations_planned": BO_ITERS,
+            "optimizer_master_seed": CONFIG.optimizer_seed,
+            "optimizer_seed_mapping": {
+                "sobol": CONFIG.optimizer_seed,
+                "global_bo": CONFIG.optimizer_seed,
+                "bo_tr": CONFIG.optimizer_seed + 18,
+                "bo_tr2": CONFIG.optimizer_seed + 28,
+            },
             "expected_history_rows": N_INITIAL + BO_ITERS,
         }, f, indent=2)
         f.flush(); os.fsync(f.fileno())

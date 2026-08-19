@@ -1,0 +1,35 @@
+{
+  "experiment": "repeat_2",
+  "completed": true,
+  "n_evaluations": 332,
+  "phase_counts": {
+    "INITIAL": 72,
+    "BO_1": 100,
+    "BO_TR": 100,
+    "BO_TR2": 60
+  },
+  "best_index": 321,
+  "best_native_LLHD": 21022.017578125,
+  "best_point": {
+    "Ab": 0.801542801173271,
+    "kb": 0.04872053357745109,
+    "eField": 0.49999351869200975,
+    "lifetime": 2178.103168800896,
+    "tran_diff": 8.8666572883672e-06,
+    "long_diff": 3.913990229230105e-06
+  },
+  "physical_length_cm": 999.926636338234,
+  "requested_length_cm": 1000.0,
+  "simulator_seed": 0,
+  "data_seed": 0,
+  "target_npz": "/sdf/home/i/iatif/REAL_BEACON/bayesian/.local/two_d/target.npz",
+  "simulator_elapsed_seconds_sum": 704.0972937379265,
+  "unique_coordinates": 332,
+  "duplicate_coordinates": 0,
+  "gp_cv": {
+    "rmse": 0.10535421790752354,
+    "baseline_rmse": 1.0622687746475774,
+    "spearman": 0.9937491453525377,
+    "coverage_95": 0.9608433734939759
+  }
+}

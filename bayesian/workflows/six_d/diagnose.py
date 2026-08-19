@@ -16,7 +16,7 @@ from pathlib import Path
 import numpy as np
 import torch
 
-BASE = Path("/sdf/home/i/iatif/larnd-sim-jax/optimize/bayesian").resolve()
+BASE = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(BASE / "workflows/six_d"))
 sys.path.insert(0, str(BASE / "workflows"))
 from build_6d import ROOT, RAW, NAMES, LO, HI, NOM, unit, physical

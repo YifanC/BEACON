@@ -26,7 +26,7 @@ import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
-BAY = Path(__file__).resolve().parents[2]  # optimize/bayesian
+BAY = Path(__file__).resolve().parents[2]
 
 
 def load_pkl(path: Path) -> dict:

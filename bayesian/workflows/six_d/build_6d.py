@@ -18,23 +18,28 @@ from botorch.models.transforms.outcome import Standardize
 from gpytorch.constraints import Interval
 from gpytorch.kernels import MaternKernel, ScaleKernel
 from gpytorch.mlls import ExactMarginalLogLikelihood
+from common import ExperimentConfig, ParameterSpace
 
 REPO = Path("/sdf/home/i/iatif/larnd-sim-jax").resolve()
-ALLOWED = REPO / "optimize/bayesian"
+ALLOWED = Path(__file__).resolve().parents[2]
 # .local/six_d/current/ is the single resumable state tree. Continuation runs
 # do not create a new top-level directory: they resume from checkpoints inside
 # this tree.
-ROOT = (ALLOWED / ".local/six_d/current").resolve()
+CONFIG = ExperimentConfig.from_environment(
+    ALLOWED / ".local/six_d/current", ALLOWED / ".local/two_d/target.npz"
+)
+ROOT = CONFIG.run_root
 RAW = ROOT / "raw"
 
 NAMES = ["Ab", "kb", "eField", "lifetime", "tran_diff", "long_diff"]
 LO = np.array([0.75, 0.03, 0.49, 400.0, 3.0e-6, 1.0e-6])
 HI = np.array([0.90, 0.08, 0.51, 6000.0, 15.0e-6, 10.0e-6])
 NOM = np.array([0.80, 0.0486, 0.50, 2200.0, 8.8e-6, 4.0e-6])
+SPACE = ParameterSpace(tuple(NAMES), LO, HI, NOM)
 UNITS = ["", "kV*g/(MeV*cm^3)", "kV/cm", "us", "cm^2/us", "cm^2/us"]
 DTYPE = torch.double
 
-TARGET = (ALLOWED / ".local/two_d/target.npz").resolve()
+TARGET = CONFIG.target
 INPUT_HDF5 = ("/sdf/data/neutrino/cyifan/dunend_train_prod/prod_mod0_mpvmpr/"
               "production_884072/job_23771825_0000/"
               "output_23771825_0000-edepsim_lbl_trklen2cm_containment2cm_"
@@ -48,11 +53,11 @@ def guard(p) -> Path:
 
 
 def unit(x) -> np.ndarray:
-    return (np.asarray(x, dtype=float) - LO) / (HI - LO)
+    return SPACE.to_unit(x)
 
 
 def physical(u) -> np.ndarray:
-    return LO + np.asarray(u, dtype=float) * (HI - LO)
+    return SPACE.to_physical(u)
 
 
 def read_csv(p):
@@ -91,7 +96,7 @@ def make_objective():
     import sys
     sys.path[:0] = [str(REPO), str(REPO / "src")]
     # Authoritative in-tree objective (workflows/objective.py). No fallback.
-    sys.path.insert(0, str(REPO / "optimize/bayesian/workflows"))
+    sys.path.insert(0, str(ALLOWED / "workflows"))
     from objective import LLHDObjective, LossSettings, SimSettings, load_target
     sim = SimSettings(
         input_file=INPUT_HDF5,
@@ -107,10 +112,11 @@ def make_objective():
         mc_diff=False,
         use_dedx_density=False,
         dedx_density_mode="histogram",
-        max_batch_len=1000.0,
-        max_nbatch=None,
-        n_events=176,
-        seed=0,
+        max_batch_len=CONFIG.physical_length_cm,
+        max_nbatch=CONFIG.max_nbatch,
+        n_events=CONFIG.n_events,
+        seed=CONFIG.simulator_seed,
+        data_seed=CONFIG.data_seed,
         sim_seed_strategy="same",
     )
     obj = LLHDObjective(
@@ -119,9 +125,14 @@ def make_objective():
         larndsim_repo=str(REPO),
         tunable_params=tuple(NAMES),
     )
-    assert len(obj.dataset) == 1 and abs(obj.dataset.tot_data_length - 999.926641702652) < 1e-3
+    if len(obj.dataset) != 1:
+        raise RuntimeError(
+            f"expected one physical-length batch, got {len(obj.dataset)} "
+            f"for n_events={CONFIG.n_events}, max_batch_len={CONFIG.physical_length_cm}"
+        )
     tgt = load_target(str(TARGET))
-    assert len(tgt) == 1 and sum(int(t["adcs"].size) for t in tgt) == 9368
+    if len(tgt) != 1:
+        raise RuntimeError(f"expected one target batch, got {len(tgt)}")
     return obj, tgt
 
 

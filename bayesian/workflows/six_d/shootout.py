@@ -10,8 +10,9 @@ import numpy as np
 import torch
 from scipy.stats import spearmanr
 
-sys.path.insert(0, "/sdf/home/i/iatif/larnd-sim-jax/optimize/bayesian/workflows/six_d")
-sys.path.insert(0, "/sdf/home/i/iatif/larnd-sim-jax/optimize/bayesian/workflows")
+BASE = Path(__file__).resolve().parents[2]
+sys.path.insert(0, str(BASE / "workflows/six_d"))
+sys.path.insert(0, str(BASE / "workflows"))
 from build_6d import NAMES, LO, HI, NOM, unit, physical
 from botorch.acquisition.logei import qLogExpectedImprovement
 from botorch.fit import fit_gpytorch_mll
@@ -21,12 +22,12 @@ from gpytorch.constraints import Interval
 from gpytorch.kernels import MaternKernel, ScaleKernel
 from gpytorch.mlls import ExactMarginalLogLikelihood
 
-RAW = Path("/sdf/home/i/iatif/larnd-sim-jax/optimize/bayesian/.local/six_d/current/raw")
+RAW = BASE / ".local/six_d/current/raw"
 SNAP = RAW / "continuation/clean_bo_tr_training.csv"
 BR = RAW / "direct_validation/surrogate_bridge.csv"
 SH = RAW / "direct_validation/surrogate_shell.csv"
 HO = RAW / "direct_validation/bo_tr_heldout_6d_results.csv"
-OUT = Path("/sdf/home/i/iatif/larnd-sim-jax/optimize/bayesian/results/six_d/shootout.json")
+OUT = BASE / "results/six_d/shootout.json"
 
 DTYPE = torch.double
 

@@ -2,7 +2,7 @@
 #SBATCH --partition=ampere
 #SBATCH --account=neutrino:cider-nu
 #SBATCH --job-name=twod_bo
-#SBATCH --output=/sdf/home/i/iatif/larnd-sim-jax/optimize/bayesian/.local/two_d/%x-%j.out
+#SBATCH --output=/sdf/home/i/iatif/REAL_BEACON/bayesian/.local/two_d/%x-%j.out
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=8
 #SBATCH --mem=128G

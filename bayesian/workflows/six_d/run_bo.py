@@ -1,6 +1,6 @@
-"""6D 100-iteration BO run.
+"""Six-dimensional 100-iteration global BO run.
 
-Same qLogEI+SingleTaskGP setup as run_4d_bo.py. Resumable via
+Resumable via
 `raw/checkpoints/checkpoint_latest.pt`. Refuses to run before the initial
 design is complete (72 rows). Appends BO rows to the shared history CSV;
 never rewrites the initial 72 rows.
@@ -13,15 +13,15 @@ import numpy as np, torch
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from build_6d import (
-    ROOT, RAW, NAMES, LO, HI, NOM, unit, physical, fit_gp,
+    CONFIG, ROOT, RAW, NAMES, LO, HI, NOM, unit, physical, fit_gp,
     make_objective, eval_point, guard,
 )
 from botorch.acquisition.logei import qLogExpectedImprovement
 from botorch.optim import optimize_acqf
 
 
-RUN = "6D-1000cm"
-SEED = 20260812
+RUN = os.environ.get("BAYESIAN_EXPERIMENT", "6D-1000cm")
+SEED = CONFIG.optimizer_seed
 BO_ITERS = 100
 N_INITIAL = 72
 

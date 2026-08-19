@@ -99,7 +99,7 @@ def main():
 
     # Provenance JSON
     prov_path = _no_overwrite(DV / f"{_PREFIX}heldout_provenance.json")
-    tgt = Path("/sdf/home/i/iatif/larnd-sim-jax/optimize/bayesian/.local/two_d/target.npz")
+    tgt = ROOT.parents[1] / "two_d/target.npz"
     prov = {
         "final_training_snapshot": str(SNAPSHOT),
         "final_training_snapshot_sha256": snap_sha,
@@ -117,7 +117,7 @@ def main():
         "coarse_norm_levels": COARSE_NORM_LEVELS.tolist(),
         "candidate_sim_deterministic_note":
             "The LUT probabilistic candidate simulator is deterministic in "
-            "(params, tracks, response). See optimize/bayesian/bo_2d/src/objective.py:16-26.",
+            "(params, tracks, response); the interface seed is not sampled.",
     }
     with prov_path.open("x") as f:
         json.dump(prov, f, indent=2); f.flush(); os.fsync(f.fileno())

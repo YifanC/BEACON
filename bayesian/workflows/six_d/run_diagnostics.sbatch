@@ -3,7 +3,7 @@
 #SBATCH --account=neutrino:default
 #SBATCH --qos=preemptable
 #SBATCH --job-name=sixd_diag
-#SBATCH --output=/sdf/home/i/iatif/larnd-sim-jax/optimize/bayesian/.local/six_d/current/raw/logs/diag-%j.out
+#SBATCH --output=/sdf/home/i/iatif/REAL_BEACON/bayesian/.local/six_d/current/raw/logs/diag-%j.out
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=8
 #SBATCH --mem=128G

@@ -1,0 +1,12 @@
+{
+  "experiment": "200cm_seed0",
+  "requested_physical_track_length_cm": 200,
+  "candidate_simulator_seed": 0,
+  "data_seed": 0,
+  "target_seed": 0,
+  "optimizer_workflow": "72 Sobol + 100 global BO + 100 BO_TR + 60 BO_TR2",
+  "optimizer_evaluations_planned": 332,
+  "optimizer_evaluations_completed": 332,
+  "actual_physical_track_length_cm": 195.33575677871704,
+  "status": "completed"
+}

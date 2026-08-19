@@ -26,7 +26,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from build_6d import RAW, NAMES, LO, HI, NOM, unit, physical, fit_gp
 from objective import LLHDObjective, LossSettings, SimSettings, load_target
 
-BASE = Path("/sdf/home/i/iatif/larnd-sim-jax/optimize/bayesian").resolve()
+BASE = Path(__file__).resolve().parents[2]
 SNAPSHOT = RAW / "continuation/clean_bo_tr_training.csv"
 DV = RAW / "direct_validation"
 BRIDGE_CSV = DV / "surrogate_bridge.csv"

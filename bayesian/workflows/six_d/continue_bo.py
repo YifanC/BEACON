@@ -19,9 +19,12 @@ from datetime import datetime, timezone
 from pathlib import Path
 import numpy as np, torch
 
-BASE = Path("/sdf/home/i/iatif/larnd-sim-jax/optimize/bayesian/.local/six_d/current").resolve()
-sys.path.insert(0, str(BASE / "scripts"))
-from build_6d import (NAMES, LO, HI, unit, physical, fit_gp,
+BASE = Path(os.environ.get(
+    "BAYESIAN_RUN_ROOT",
+    str(Path(__file__).resolve().parents[2] / ".local/six_d/current"),
+)).resolve()
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from build_6d import (CONFIG, NAMES, LO, HI, unit, physical, fit_gp,
                        make_objective, eval_point, guard)
 from botorch.acquisition.logei import qLogExpectedImprovement
 from botorch.optim import optimize_acqf
@@ -41,7 +44,7 @@ SUMMARY_OUT = TRACES / "bo_6d_continuation_summary.json"
 CP_LATEST = CPS / "checkpoint_latest.pt"
 
 N_BO_2 = 50
-SEED = 20260815   # different from the initial 6D BO (20260812) so acquisition randomness is fresh
+SEED = CONFIG.optimizer_seed + 3
 
 FIELDS = [
     "run", "evaluation_index", "simulator_iteration", "phase",
@@ -315,7 +318,7 @@ BO_TR_TRACE = TRACES / "bo_tr_trace_latest.npz"
 BO_TR_SUMMARY = TRACES / "bo_tr_summary.json"
 
 N_BO_TR = 100
-BO_TR_SEED = 20260830
+BO_TR_SEED = CONFIG.optimizer_seed + 18
 
 # Trust-region hyperparameters (frozen before the run)
 TR_LEN_INIT = 0.40
@@ -584,7 +587,7 @@ BO_TR2_TRACE = TRACES / "bo_tr2_trace_latest.npz"
 BO_TR2_SUMMARY = TRACES / "bo_tr2_summary.json"
 
 N_BO_TR2 = 60
-BO_TR2_SEED = 20260840
+BO_TR2_SEED = CONFIG.optimizer_seed + 28
 BO_TR2_KERNEL_NU = 1.5  # Matérn-3/2 (Model C)
 
 # Fresh trust-region state (audit-authorised policy)

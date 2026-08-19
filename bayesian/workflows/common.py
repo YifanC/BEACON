@@ -7,6 +7,8 @@ This module implements only what every retained workflow needs:
   - LLHDObjective factory that reuses the upstream `optimize.bayesian` code.
 """
 from __future__ import annotations
+from dataclasses import dataclass
+import os
 from pathlib import Path
 import numpy as np
 import torch
@@ -22,8 +24,63 @@ from gpytorch.mlls import ExactMarginalLogLikelihood
 
 DTYPE = torch.double
 
-REPO = Path(__file__).resolve().parents[3]
-BAY = REPO / "optimize" / "bayesian"
+REPO = Path(os.environ.get("LARNDSIM_REPOSITORY", "/sdf/home/i/iatif/larnd-sim-jax")).resolve()
+BAY = Path(__file__).resolve().parents[1]
+
+
+@dataclass(frozen=True)
+class ExperimentConfig:
+    """Runtime ownership for one optimizer execution."""
+
+    name: str
+    run_root: Path
+    target: Path
+    physical_length_cm: float
+    n_events: int
+    max_nbatch: int | None
+    simulator_seed: int = 0
+    data_seed: int = 0
+    optimizer_seed: int = 20260812
+    initial_evaluations: int = 72
+    global_bo_evaluations: int = 100
+    trust_region_evaluations: int = 100
+    final_refinement_evaluations: int = 60
+
+    @classmethod
+    def from_environment(cls, default_root: Path, default_target: Path) -> "ExperimentConfig":
+        max_nbatch = os.environ.get("BAYESIAN_MAX_NBATCH", "")
+        return cls(
+            name=os.environ.get("BAYESIAN_EXPERIMENT", "6D-1000cm"),
+            run_root=Path(os.environ.get("BAYESIAN_RUN_ROOT", default_root)).resolve(),
+            target=Path(os.environ.get("BAYESIAN_TARGET_NPZ", default_target)).resolve(),
+            physical_length_cm=float(os.environ.get("BAYESIAN_PHYSICAL_LENGTH_CM", "1000")),
+            n_events=int(os.environ.get("BAYESIAN_N_EVENTS", "176")),
+            max_nbatch=int(max_nbatch) if max_nbatch else None,
+            simulator_seed=int(os.environ.get("BAYESIAN_SIMULATOR_SEED", "0")),
+            data_seed=int(os.environ.get("BAYESIAN_DATA_SEED", "0")),
+            optimizer_seed=int(os.environ.get("BAYESIAN_OPTIMIZER_SEED", "20260812")),
+        )
+
+    @property
+    def total_evaluations(self) -> int:
+        return (self.initial_evaluations + self.global_bo_evaluations
+                + self.trust_region_evaluations + self.final_refinement_evaluations)
+
+
+@dataclass(frozen=True)
+class ParameterSpace:
+    """Names, physical bounds, and held-out nominal closure coordinate."""
+
+    names: tuple[str, ...]
+    lower: np.ndarray
+    upper: np.ndarray
+    nominal: np.ndarray
+
+    def to_unit(self, physical: np.ndarray) -> np.ndarray:
+        return (np.asarray(physical, dtype=float) - self.lower) / (self.upper - self.lower)
+
+    def to_physical(self, unit: np.ndarray) -> np.ndarray:
+        return self.lower + np.asarray(unit, dtype=float) * (self.upper - self.lower)
 
 
 def fit_gp(x_unit: np.ndarray, native_llhd: np.ndarray, *, seed: int,

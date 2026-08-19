@@ -21,7 +21,7 @@ from scipy.stats import spearmanr
 
 
 REPO = Path("/sdf/home/i/iatif/larnd-sim-jax").resolve()
-BAY = REPO / "optimize/bayesian"
+BAY = Path(__file__).resolve().parents[2]
 RAW = BAY / ".local/six_d/current/raw"
 WORKFLOW = BAY / "workflows/six_d"
 RESULTS = BAY / "results/six_d"

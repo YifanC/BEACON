@@ -3,7 +3,7 @@
 #SBATCH --account=mli:cider-ml
 #SBATCH --qos=normal
 #SBATCH --job-name=sixd_botr_ml
-#SBATCH --output=/sdf/home/i/iatif/larnd-sim-jax/optimize/bayesian/.local/six_d/current/raw/logs/botr-%j.out
+#SBATCH --output=/sdf/home/i/iatif/REAL_BEACON/bayesian/.local/six_d/current/raw/logs/botr-%j.out
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=8
 #SBATCH --mem=128G

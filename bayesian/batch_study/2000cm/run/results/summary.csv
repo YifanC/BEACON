@@ -1,0 +1,17 @@
+metric,value
+completed,True
+n_evaluations,332
+best_native_LLHD,43451.19140625
+physical_length_cm,1998.4871374368668
+requested_length_cm,2000.0
+simulator_seed,0
+data_seed,0
+simulator_elapsed_seconds_sum,1377.6746375598013
+unique_coordinates,332
+duplicate_coordinates,0
+Ab,0.8023081205596895
+kb,0.04895149123667547
+eField,0.4999934251086211
+lifetime,2227.298938079635
+tran_diff,8.787987716308146e-06
+long_diff,3.96267553132661e-06

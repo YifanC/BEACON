@@ -1,0 +1,9 @@
+{
+  "candidate_simulator_seed": 1,
+  "actual_length_cm": 195.33575677871704,
+  "nominal_native_LLHD_repeats": [
+    4077.038330078125,
+    4077.0390625
+  ],
+  "exact_repeat": false
+}
